@@ -44,6 +44,7 @@ function build_sdl2() {
     cd ..
     rm -rf $(get_ver_sdl2)
     apt-get source libsdl2
+    apt-get install -y tree libpulse-dev libxv-dev
     cd libsdl2*
     echo HERHEHREHERHERHREHERHREHERHHEREHRERHERHERHERHHRHERHERHERHE
     sed -i 's%x11-shared%x11-shared --disable-pulseaudio --disable-esd --disable-video-mir --disable-video-wayland --disable-video-opengl%' debian/rules

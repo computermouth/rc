@@ -17,6 +17,8 @@ function depends_retroarch() {
     local depends=(libudev-dev libxkbcommon-dev libsdl2-dev)
     isPlatform "rpi" && depends+=(libraspberrypi-dev)
     isPlatform "x86" && depends+=(nvidia-cg-toolkit)
+    isPlatform "mali" && depends+=(libx11-xcb-dev)
+
     compareVersions "$__os_release" ge 8  && depends+=(libusb-1.0-0-dev)
 
     getDepends "${depends[@]}"
@@ -36,7 +38,7 @@ function build_retroarch() {
     isPlatform "arm" && params+=(--enable-floathard)
     isPlatform "neon" && params+=(--enable-neon)
 
-    isPlatform "mali" && params+=(--enable-opengles --disable-sdl --enable-sdl2 --disable-oss --disable-x11)
+    isPlatform "mali" && params+=(--enable-opengles --disable-sdl --enable-sdl2 --disable-oss)
 
     isPlatform "mali" && params+=(--disable-shaderpipeline)
     ./configure --prefix="$md_inst" "${params[@]}"
