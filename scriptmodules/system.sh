@@ -255,7 +255,8 @@ function platform_armv7-mali() {
     __default_cflags="-O2 -march=armv7-a -mfpu=neon-vfpv4 -mfloat-abi=hard"
     __default_asflags=""
     __default_makeflags="-j$(nproc)"
-    __platform_flags="arm armv7 neon mali"
+#    __platform_flags="arm armv7 neon mali"
+    __platform_flags="arm armv7 neon mali x11"
     __has_binaries=0
 }
 

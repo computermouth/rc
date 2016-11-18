@@ -16,9 +16,7 @@ rp_module_section="core"
 function depends_retroarch() {
     local depends=(libudev-dev libxkbcommon-dev libsdl2-dev)
     isPlatform "rpi" && depends+=(libraspberrypi-dev)
-    isPlatform "mali" && depends+=(mali-fbdev)
     isPlatform "x86" && depends+=(nvidia-cg-toolkit)
-    isPlatform "x11" && depends+=(libpulse-dev libavcodec-dev libavformat-dev libavdevice-dev)
     compareVersions "$__os_release" ge 8  && depends+=(libusb-1.0-0-dev)
 
     getDepends "${depends[@]}"
@@ -28,20 +26,19 @@ function depends_retroarch() {
 
 function sources_retroarch() {
     gitPullOrClone "$md_build" https://github.com/libretro/RetroArch.git
-    if isPlatform "mali"; then
-        sed -i 's|struct mali_native_window native_window|fbdev_window native_window|' gfx/drivers_context/mali_fbdev_ctx.c
-    fi
     applyPatch "$md_data/01_hotkey_hack.diff"
     applyPatch "$md_data/02_disable_search.diff"
 }
 
 function build_retroarch() {
     local params=(--enable-sdl2)
-    ! isPlatform "x11" && params+=(--disable-x11 --enable-opengles --disable-ffmpeg --disable-sdl --enable-sdl2 --disable-oss --disable-pulse --disable-al --disable-jack)
     isPlatform "rpi" && params+=(--enable-dispmanx)
-    isPlatform "mali" && params+=(--enable-mali_fbdev)
     isPlatform "arm" && params+=(--enable-floathard)
     isPlatform "neon" && params+=(--enable-neon)
+
+    isPlatform "mali" && params+=(--enable-opengles --disable-sdl --enable-sdl2 --disable-oss --disable-x11)
+
+    isPlatform "mali" && params+=(--disable-shaderpipeline)
     ./configure --prefix="$md_inst" "${params[@]}"
     make clean
     make

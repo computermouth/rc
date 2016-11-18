@@ -15,9 +15,8 @@ rp_module_section=""
 rp_module_flags="!x86"
 
 function get_ver_sdl2() {
-    local ver="2.0.4+4"
+    local ver="2.0.2+dfsg1-6"
     isPlatform "rpi" && ver+="rpi"
-    isPlatform "mali" && ver+="mali"
     echo "$ver"
 }
 
@@ -30,21 +29,30 @@ function depends_sdl2() {
     # already covered by the build-essential package retropie relies on.
     local depends=(devscripts debhelper dh-autoreconf libasound2-dev libudev-dev libibus-1.0-dev libdbus-1-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxrandr-dev libxss-dev libxt-dev libxxf86vm-dev)
     isPlatform "rpi" && depends+=(libraspberrypi-dev)
-    isPlatform "mali" && depends+=(mali-fbdev)
     getDepends "${depends[@]}"
 }
 
 function sources_sdl2() {
     local branch="release-2.0.4"
     isPlatform "rpi" && branch="retropie-2.0.4"
-    isPlatform "mali" && branch="mali-2.0.4"
     gitPullOrClone "$md_build/$(get_ver_sdl2)" https://github.com/RetroPie/SDL-mirror.git "$branch"
     cd $(get_ver_sdl2)
-    DEBEMAIL="Jools Wills <buzz@exotica.org.uk>" dch -v $(get_ver_sdl2) "SDL 2.0.4 configured for the $__platform"
 }
 
 function build_sdl2() {
     cd $(get_ver_sdl2)
+    cd ..
+    rm -rf $(get_ver_sdl2)
+    apt-get source libsdl2
+    cd libsdl2*
+    echo HERHEHREHERHERHREHERHREHERHHEREHRERHERHERHERHHRHERHERHERHE
+    sed -i 's%x11-shared%x11-shared --disable-pulseaudio --disable-esd --disable-video-mir --disable-video-wayland --disable-video-opengl%' debian/rules
+    sed -i 's%libgl1-mesa-dev%tree%' debian/control
+    sed -i 's%libglu1-mesa-dev%tree%' debian/control
+    sed -i 's%libwayland-dev%tree%' debian/control
+    sed -i 's%doxygen%tree%' debian/control
+    
+    sed -i 's%libudev0%libudev1%' debian/control
     dpkg-buildpackage
     md_ret_require="$md_build/libsdl2-dev_$(get_ver_sdl2)_$(get_arch_sdl2).deb"
     local dest="$__tmpdir/archives/$__os_codename/$__platform"
