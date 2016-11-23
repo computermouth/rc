@@ -15,11 +15,7 @@ rp_module_section=""
 rp_module_flags="!x86"
 
 function get_ver_sdl2() {
-    echo "2.0.5"
-}
-
-function get_pkg_ver_sdl2() {
-    local ver="$(get_ver_sdl2)+1"
+    local ver="2.0.2+dfsg1-6"
     isPlatform "rpi" && ver+="rpi"
     echo "$ver"
 }
@@ -37,30 +33,27 @@ function depends_sdl2() {
 }
 
 function sources_sdl2() {
-    local ver="$(get_ver_sdl2)"
-    local pkg_ver="$(get_pkg_ver_sdl2)"
-
-    local branch="release-$ver"
-    isPlatform "rpi" && branch="retropie-$ver"
-
-    gitPullOrClone "$md_build/$pkg_ver" https://github.com/RetroPie/SDL-mirror.git "$branch"
-
-    cd "$pkg_ver"
+    local branch="release-2.0.4"
+    isPlatform "rpi" && branch="retropie-2.0.4"
+    gitPullOrClone "$md_build/$(get_ver_sdl2)" https://github.com/RetroPie/SDL-mirror.git "$branch"
+    cd $(get_ver_sdl2)
 }
 
 function build_sdl2() {
-    cd "$(get_pkg_ver_sdl2)"
-
+    cd $(get_ver_sdl2)
+    cd ..
+    rm -rf $(get_ver_sdl2)
+    apt-get source libsdl2
     apt-get install -y tree libpulse-dev libxv-dev
-    sed -i 's%x11-shared%x11-shared --disable-pulseaudio --disable-esd --disable-video-mir --disable-video-wayland --disable-video-opengl%' debian/rules
-    sed -i 's%libgl1-mesa-dev%tree%' debian/control
-    sed -i 's%libglu1-mesa-dev%tree%' debian/control
-    sed -i 's%libwayland-dev%tree%' debian/control
-    sed -i 's%doxygen%tree%' debian/control
-    sed -i 's%libudev0%libudev1%' debian/control
-
+    cd libsdl2*
+    echo HERHEHREHERHERHREHERHREHERHHEREHRERHERHERHERHHRHERHERHERHE
+    sed -i 's%--enable-video-wayland --disable-wayland-shared%--disable-video-mir --disable-video-wayland --disable-video-opengl%' debian/rules
+    sed -i 's%libgl1-mesa-dev%libx11-dev%' debian/control
+    sed -i 's%libglu1-mesa-dev%libx11-dev%' debian/control
+    sed -i 's%libwayland-dev%libx11-dev%' debian/control
+    
     dpkg-buildpackage
-    md_ret_require="$md_build/libsdl2-dev_$(get_pkg_ver_sdl2)_$(get_arch_sdl2).deb"
+    md_ret_require="$md_build/libsdl2-dev_$(get_ver_sdl2)_$(get_arch_sdl2).deb"
     local dest="$__tmpdir/archives/$__os_codename/$__platform"
     mkdir -p "$dest"
     cp ../*.deb "$dest/"
@@ -74,7 +67,7 @@ function remove_old_sdl2() {
 function install_sdl2() {
     remove_old_sdl2
     # if the packages don't install completely due to missing dependencies the apt-get -y -f install will correct it
-    if ! dpkg -i libsdl2-2.0-0_$(get_pkg_ver_sdl2)_$(get_arch_sdl2).deb libsdl2-dev_$(get_pkg_ver_sdl2)_$(get_arch_sdl2).deb; then
+    if ! dpkg -i libsdl2-2.0-0_$(get_ver_sdl2)_$(get_arch_sdl2).deb libsdl2-dev_$(get_ver_sdl2)_$(get_arch_sdl2).deb; then
         apt-get -y -f install
     fi
     echo "libsdl2-dev hold" | dpkg --set-selections
@@ -85,9 +78,8 @@ function install_bin_sdl2() {
         md_ret_errors+=("$md_id is only available as a binary package for platform rpi")
         return 1
     fi
-    
-    wget -c "$__binary_url/libsdl2-dev_$(get_pkg_ver_sdl2)_armhf.deb"
-    wget -c "$__binary_url/libsdl2-2.0-0_$(get_pkg_ver_sdl2)_armhf.deb"
+    wget -c "$__binary_url/libsdl2-dev_$(get_ver_sdl2)_armhf.deb"
+    wget -c "$__binary_url/libsdl2-2.0-0_$(get_ver_sdl2)_armhf.deb"
     install_sdl2
     rm ./*.deb
 }
