@@ -35,7 +35,8 @@ function depends_sdl2() {
 function sources_sdl2() {
     local branch="release-2.0.4"
     isPlatform "rpi" && branch="retropie-2.0.4"
-    gitPullOrClone "$md_build/$(get_ver_sdl2)" https://github.com/RetroPie/SDL-mirror.git "$branch"
+#    gitPullOrClone "$md_build/$(get_ver_sdl2)" https://github.com/RetroPie/SDL-mirror.git "$branch"
+    mkdir -p "$branch"
     cd $(get_ver_sdl2)
 }
 
@@ -46,12 +47,11 @@ function build_sdl2() {
     apt-get source libsdl2
     apt-get install -y tree libpulse-dev libxv-dev
     cd libsdl2*
-    echo HERHEHREHERHERHREHERHREHERHHEREHRERHERHERHERHHRHERHERHERHE
     sed -i 's%--enable-video-wayland --disable-wayland-shared%--disable-video-mir --disable-video-wayland --disable-video-opengl%' debian/rules
     sed -i 's%libgl1-mesa-dev%libx11-dev%' debian/control
     sed -i 's%libglu1-mesa-dev%libx11-dev%' debian/control
     sed -i 's%libwayland-dev%libx11-dev%' debian/control
-    
+
     dpkg-buildpackage
     md_ret_require="$md_build/libsdl2-dev_$(get_ver_sdl2)_$(get_arch_sdl2).deb"
     local dest="$__tmpdir/archives/$__os_codename/$__platform"
