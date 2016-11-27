@@ -36,14 +36,9 @@ function sources_sdl2() {
     local branch="release-2.0.4"
     isPlatform "rpi" && branch="retropie-2.0.4"
 #    gitPullOrClone "$md_build/$(get_ver_sdl2)" https://github.com/RetroPie/SDL-mirror.git "$branch"
-    mkdir -p "$branch"
-    cd $(get_ver_sdl2)
 }
 
 function build_sdl2() {
-    cd $(get_ver_sdl2)
-    cd ..
-    rm -rf $(get_ver_sdl2)
     apt-get source libsdl2
     apt-get install -y tree libpulse-dev libxv-dev
     cd libsdl2*
