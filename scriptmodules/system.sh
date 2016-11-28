@@ -88,6 +88,9 @@ function get_os_version() {
             fatalError "Unsupported OS\n\n$(lsb_release -idrc)"
             ;;
     esac
+
+    # add 32bit/64bit to platform flags
+    __platform_flags+=" $(getconf LONG_BIT)bit"
 }
 
 function get_default_gcc() {
@@ -146,14 +149,14 @@ function get_retropie_depends() {
 }
 
 function get_platform() {
-    local architecture=$(uname --machine)
+    local architecture="$(uname --machine)"
     if [[ -z "$__platform" ]]; then
-        case $(sed -n '/^Hardware/s/^.*: \(.*\)/\1/p' < /proc/cpuinfo) in
+        case "$(sed -n '/^Hardware/s/^.*: \(.*\)/\1/p' < /proc/cpuinfo)" in
             BCM2708)
                 __platform="rpi1"
                 ;;
             BCM2709)
-                local revision=$(sed -n '/^Revision/s/^.*: \(.*\)/\1/p' < /proc/cpuinfo)
+                local revision="$(sed -n '/^Revision/s/^.*: \(.*\)/\1/p' < /proc/cpuinfo)"
                 if [[ "$revision" == "a02082" || "$revision" == "a22082" ]]; then
                     if [[ "$architecture" == "aarch64" ]]; then
                         __platform="rpi3-64"
@@ -201,7 +204,7 @@ function platform_rpi1() {
 }
 
 function platform_rpi2() {
-    __default_cflags="-O2 -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard"
+    __default_cflags="-O2 -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -ftree-vectorize -funsafe-math-optimizations"
     __default_asflags=""
     __default_makeflags="-j2"
     __platform_flags="arm armv7 neon rpi"
@@ -214,7 +217,7 @@ function platform_rpi2() {
 # note the rpi3 currently uses the rpi2 binaries - for ease of maintenance - rebuilding from source
 # could improve performance with the compiler options below but needs further testing
 function platform_rpi3() {
-    __default_cflags="-O2 -march=armv8-a+crc -mtune=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard"
+    __default_cflags="-O2 -march=armv8-a+crc -mtune=cortex-a53 -mfpu=neon-fp-armv8 -mfloat-abi=hard -ftree-vectorize -funsafe-math-optimizations"
     __default_asflags=""
     __default_makeflags="-j2"
     __platform_flags="arm armv8 neon rpi"
@@ -227,7 +230,7 @@ function platform_rpi3-64() {
 }
 
 function platform_odroid-c1() {
-    __default_cflags="-O2 -mcpu=cortex-a5 -mfpu=neon-vfpv4 -mfloat-abi=hard"
+    __default_cflags="-O2 -mcpu=cortex-a5 -mfpu=neon-vfpv4 -mfloat-abi=hard -ftree-vectorize -funsafe-math-optimizations"
     __default_asflags=""
     __default_makeflags="-j2"
     __platform_flags="arm armv7 neon mali"
@@ -260,7 +263,7 @@ function platform_armv7-mali() {
 }
 
 function platform_imx6() {
-    __default_cflags="-O2 -march=armv7-a -mfpu=neon -mtune=cortex-a9 -mfloat-abi=hard"
+    __default_cflags="-O2 -march=armv7-a -mfpu=neon -mtune=cortex-a9 -mfloat-abi=hard -ftree-vectorize -funsafe-math-optimizations"
     __default_asflags=""
     __default_makeflags="-j2"
     __platform_flags="arm armv7 neon"

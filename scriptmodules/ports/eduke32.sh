@@ -21,7 +21,7 @@ function depends_eduke32() {
         depends+=(libsdl2-dev libsdl2-mixer-dev)
     fi
     isPlatform "x86" && depends+=(nasm)
-    isPlatform "x11" && depends+=(libgtk2.0-dev)
+    isPlatform "x11" && depends+=(libgl1-mesa-dev libglu1-mesa-dev libgtk2.0-dev)
     getDepends "${depends[@]}"
 }
 

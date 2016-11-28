@@ -196,11 +196,11 @@ function getDepends() {
     for required in $@; do
         if [[ "$md_mode" == "install" ]]; then
             # make sure we have our sdl1 / sdl2 installed
-            if ! isPlatform "x11" && [[ "$required" == "libsdl1.2-dev" ]] && ! hasPackage libsdl1.2-dev 1.2.15-$(get_ver_sdl1)rpi "eq"; then
+            if ! isPlatform "x11" && [[ "$required" == "libsdl1.2-dev" ]] && ! hasPackage libsdl1.2-dev $(get_pkg_ver_sdl1) "eq"; then
                 packages+=("$required")
                 continue
             fi
-            if ! isPlatform "x11" && [[ "$required" == "libsdl2-dev" ]] && ! hasPackage libsdl2-dev $(get_ver_sdl2) "eq"; then
+            if ! isPlatform "x11" && [[ "$required" == "libsdl2-dev" ]] && ! hasPackage libsdl2-dev $(get_pkg_ver_sdl2) "eq"; then
                 packages+=("$required")
                 continue
             fi
@@ -337,19 +337,24 @@ function gitPullOrClone() {
     fi
 }
 
-# @fn ensureRootdirExists()
+# @fn setupDirectories()
 # @brief Makes sure some required retropie directories and files are created.
-function ensureRootdirExists() {
+function setupDirectories() {
     mkdir -p "$rootdir"
     mkUserDir "$datadir"
+    mkUserDir "$romdir"
+    mkUserDir "$biosdir"
     mkUserDir "$configdir"
     mkUserDir "$configdir/all"
 
     # make sure we have inifuncs.sh in place and that it is up to date
     mkdir -p "$rootdir/lib"
-    if [[ ! -f "$rootdir/lib/inifuncs.sh" || "$rootdir/lib/inifuncs.sh" -ot "$scriptdir/scriptmodules/inifuncs.sh" ]]; then
-        cp --preserve=timestamps "$scriptdir/scriptmodules/inifuncs.sh" "$rootdir/lib/inifuncs.sh"
-    fi
+    local helper_libs=(inifuncs.sh archivefuncs.sh)
+    for helper in "${helper_libs[@]}"; do
+        if [[ ! -f "$rootdir/lib/$helper" || "$rootdir/lib/$helper" -ot "$scriptdir/scriptmodules/$helper" ]]; then
+            cp --preserve=timestamps "$scriptdir/scriptmodules/$helper" "$rootdir/lib/$helper"
+        fi
+    done
 
     # create template for autoconf.cfg and make sure it is owned by $user
     local config="$configdir/all/autoconf.cfg"
@@ -462,6 +467,20 @@ function diffFiles() {
 function compareVersions() {
     dpkg --compare-versions "$1" "$2" "$3" >/dev/null
     return $?
+}
+
+## @fn dirIsEmpty()
+## @param path path to directory
+## @param files_only set to 1 to ignore sub directories
+## @retval 0 if the directory is empty
+## @retval 1 if the directory is not empty
+function dirIsEmpty() {
+    if [[ "$2" -eq 1 ]]; then
+        [[ -z "$(ls -lA1 "$1" | grep "^-")" ]] && return 0
+    else
+        [[ -z "$(ls -A "$1")" ]] && return 0
+    fi
+    return 1
 }
 
 ## @fn copyDefaultConfig()
@@ -752,55 +771,10 @@ function iniFileEditor() {
 ## @param theme name of theme to use
 ## @brief Adds a system entry for Emulation Station (to /etc/emulationstation/es_systems.cfg).
 function setESSystem() {
-    local fullname=$1
-    local name=$2
-    local path=$3
-    local extension=$4
-    local command=$5
-    local platform=$6
-    local theme=$7
-
-    local conf="/etc/emulationstation/es_systems.cfg"
-    mkdir -p "/etc/emulationstation"
-    if [[ ! -f "$conf" ]]; then
-        echo "<systemList />" >"$conf"
-    fi
-
-    cp "$conf" "$conf.bak"
-    if [[ $(xmlstarlet sel -t -v "count(/systemList/system[name='$name'])" "$conf") -eq 0 ]]; then
-        xmlstarlet ed -L -s "/systemList" -t elem -n "system" -v "" \
-            -s "/systemList/system[last()]" -t elem -n "name" -v "$name" \
-            -s "/systemList/system[last()]" -t elem -n "fullname" -v "$fullname" \
-            -s "/systemList/system[last()]" -t elem -n "path" -v "$path" \
-            -s "/systemList/system[last()]" -t elem -n "extension" -v "$extension" \
-            -s "/systemList/system[last()]" -t elem -n "command" -v "$command" \
-            -s "/systemList/system[last()]" -t elem -n "platform" -v "$platform" \
-            -s "/systemList/system[last()]" -t elem -n "theme" -v "$theme" \
-            "$conf"
-    else
-        xmlstarlet ed -L \
-            -u "/systemList/system[name='$name']/fullname" -v "$fullname" \
-            -u "/systemList/system[name='$name']/path" -v "$path" \
-            -u "/systemList/system[name='$name']/extension" -v "$extension" \
-            -u "/systemList/system[name='$name']/command" -v "$command" \
-            -u "/systemList/system[name='$name']/platform" -v "$platform" \
-            -u "/systemList/system[name='$name']/theme" -v "$theme" \
-            "$conf"
-    fi
-
-    sortESSystems "name"
-}
-
-## @fn sortESSystems()
-## @param field field to sort by (eg name / platform etc)
-## @brief Sorts `/etc/emulationstation/es_systems.cfg` system list by specified field.
-function sortESSystems() {
-    local field="$1"
-    cp "/etc/emulationstation/es_systems.cfg" "/etc/emulationstation/es_systems.cfg.bak"
-    xmlstarlet sel -D -I \
-        -t -m "/" -e "systemList" \
-        -m "//system" -s A:T:U "$1" -c "." \
-        "/etc/emulationstation/es_systems.cfg.bak" >"/etc/emulationstation/es_systems.cfg"
+    local function
+    for function in $(compgen -A function _add_system_); do
+        "$function" "$@"
+    done
 }
 
 ## @fn ensureSystemretroconfig()
@@ -970,7 +944,7 @@ function joy2keyStart() {
     fi
 
     # get the first joystick device (if not already set)
-    [[ -z "$__joy2key_dev" ]] && __joy2key_dev="$(ls -1 /dev/input/js* 2>/dev/null | head -n1)"
+    [[ -c "$__joy2key_dev" ]] || __joy2key_dev="$(ls -1 /dev/input/js* 2>/dev/null | head -n1)"
 
     # if no joystick device, or joy2key is already running exit
     [[ -z "$__joy2key_dev" ]] || pgrep -f joy2key.py >/dev/null && return 1
@@ -991,6 +965,26 @@ function joy2keyStop() {
         kill -INT $__joy2key_pid 2>/dev/null
         sleep 1
     fi
+}
+
+## @fn getPlatformConfig()
+## @param key key to look up
+## @brief gets a config from a platforms.cfg ini
+## @details gets a config from a platforms.cfg ini first looking in
+## `$configdir/all/platforms.cfg` then `$scriptdir/platforms.cfg`
+## allowing users to override any parts of `$scriptdir/platforms.cfg`
+function getPlatformConfig() {
+    local key="$1"
+    local conf
+    for conf in "$configdir/all/platforms.cfg" "$scriptdir/platforms.cfg"; do
+        [[ ! -f "$conf" ]] && continue
+        iniConfig "=" '"' "$conf"
+        iniGet "$key"
+        [[ -n "$ini_value" ]] && break
+    done
+    # workaround for RetroPie platform
+    [[ "$key" == "retropie_fullname" ]] && ini_value="RetroPie"
+    echo "$ini_value"
 }
 
 ## @fn addSystem()
@@ -1047,6 +1041,10 @@ function addSystem() {
         theme="$system"
     fi
 
+    local temp
+    temp="$(getPlatformConfig "${system}_theme")"
+    [[ -n "$temp" ]] && theme="$temp"
+
     # check if we are removing the system
     if [[ "$md_mode" == "remove" ]]; then
         delSystem "$id" "$system"
@@ -1064,19 +1062,9 @@ function addSystem() {
         exts=(".sh")
         fullname="Ports"
     else
-        local conf=""
-        if [[ -f "$configdir/all/platforms.cfg" ]]; then
-            conf="$configdir/all/platforms.cfg"
-        else
-            conf="$scriptdir/platforms.cfg"
-        fi
-
-        # get extensions to show
-        iniConfig "=" '"' "$conf"
-        iniGet "${system}_fullname"
-        [[ -n "$ini_value" ]] && fullname="$ini_value"
-        iniGet "${system}_exts"
-        [[ -n "$ini_value" ]] && exts+=($ini_value)
+        temp="$(getPlatformConfig "${system}_fullname")"
+        [[ -n "$temp" ]] && fullname="$temp"
+        exts+=("$(getPlatformConfig "${system}_exts")")
 
         # automatically add parameters for libretro modules
         if [[ "$id" =~ ^lr- ]]; then
@@ -1084,7 +1072,7 @@ function addSystem() {
         fi
     fi
 
-    exts="${exts[@]}"
+    exts="${exts[*]}"
     # add the extensions again as uppercase
     exts+=" ${exts^^}"
 
@@ -1129,10 +1117,12 @@ function delSystem() {
         grep -q "=" "$config" || rm -f "$config"
     fi
 
-    # if we don't have an emulators.cfg we can remove the system from emulation station
-    if [[ -f /etc/emulationstation/es_systems.cfg && ! -f "$config" ]]; then
-        xmlstarlet ed -L -P -d "/systemList/system[name='$system']" /etc/emulationstation/es_systems.cfg
-    fi
+    local fullname="$(getPlatformConfig "${system}_fullname")"
+
+    local function
+    for function in $(compgen -A function _del_system_); do
+        "$function" "$fullname" "$system"
+    done
 }
 
 ## @fn addPort()

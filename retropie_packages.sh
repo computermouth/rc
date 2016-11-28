@@ -11,7 +11,7 @@
 
 # global variables ==========================================================
 
-__version="4.1.1"
+__version="4.1.4"
 
 [[ "$__debug" -eq 1 ]] && set -x
 
@@ -19,7 +19,7 @@ __version="4.1.1"
 rootdir="/opt/retropie"
 
 user="$SUDO_USER"
-[[ -z "$user" ]] && user=$(id -un)
+[[ -z "$user" ]] && user="$(id -un)"
 
 home="$(eval echo ~$user)"
 datadir="$home/RetroPie"
@@ -28,8 +28,8 @@ romdir="$datadir/roms"
 emudir="$rootdir/emulators"
 configdir="$rootdir/configs"
 
-scriptdir=$(dirname "$0")
-scriptdir=$(cd "$scriptdir" && pwd)
+scriptdir="$(dirname "$0")"
+scriptdir="$(cd "$scriptdir" && pwd)"
 
 __logdir="$scriptdir/logs"
 __tmpdir="$scriptdir/tmp"
@@ -37,7 +37,7 @@ __builddir="$__tmpdir/build"
 __swapdir="$__tmpdir"
 
 # check, if sudo is used
-if [[ $(id -u) -ne 0 ]]; then
+if [[ "$(id -u)" -ne 0 ]]; then
     echo "Script must be run as root. Try 'sudo $0'"
     exit 1
 fi
@@ -51,9 +51,6 @@ source "$scriptdir/scriptmodules/packages.sh"
 
 setup_env
 
-mkUserDir "$romdir"
-mkUserDir "$biosdir"
-
 rp_registerAllModules
 
 ensureFBMode 320 240
@@ -61,7 +58,7 @@ ensureFBMode 320 240
 rp_ret=0
 if [[ $# -gt 0 ]]; then
     joy2keyStart
-    ensureRootdirExists
+    setupDirectories
     rp_callModule "$@"
     rp_ret=$?
     joy2keyStop

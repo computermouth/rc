@@ -20,7 +20,7 @@ RSP_PLUGIN="$4"
 rootdir="/opt/retropie"
 configdir="$rootdir/configs"
 config="$configdir/n64/mupen64plus.cfg"
-datadir="$home/RetroPie"
+datadir="$HOME/RetroPie"
 romdir="$datadir/roms"
 
 source "$rootdir/lib/inifuncs.sh"
@@ -230,7 +230,7 @@ function testCompatibility() {
             fi
             iniConfig " = " "" "$config"
             # Settings version. Don't touch it.
-            iniSet "configVersion" "14"
+            iniSet "configVersion" "15"
             # Enable FBEmulation if necessary
             iniSet "EnableFBEmulation" "False"
             for game in "${GLideN64FBEMU_whitelist[@]}"; do
