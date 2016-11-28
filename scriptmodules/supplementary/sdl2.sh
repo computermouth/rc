@@ -78,7 +78,7 @@ function install_sdl2() {
     local dest="$__tmpdir/archives/$__os_codename/$__platform"
     # if the packages don't install completely due to missing dependencies the apt-get -y -f install will correct it
     #if ! dpkg -i libsdl2-2.0-0_$(get_pkg_ver_sdl2)_$(get_arch_sdl2).deb libsdl2-dev_$(get_pkg_ver_sdl2)_$(get_arch_sdl2).deb; then
-    if ! dpkg -i $(dest)/libsdl2-2.0-0_2.0.2+dfsg1-6_armhf.deb $(dest)/libsdl2-dev_2.0.2+dfsg1-6_armhf.deb; then
+    if ! dpkg -i $dest/libsdl2-2.0-0_2.0.2+dfsg1-6_armhf.deb $dest/libsdl2-dev_2.0.2+dfsg1-6_armhf.deb; then
         apt-get -y -f install
     fi
     echo "libsdl2-dev hold" | dpkg --set-selections
